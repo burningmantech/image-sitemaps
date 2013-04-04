@@ -5,6 +5,8 @@
 {% for url in urlset %}
   <url>
     <loc>{{ url.location }}</loc>
+    <lastmod>{{ url.lastmod|date:"Y-m-d" }}</lastmod>
+    <changefreq>{{ url.changefreq }}</changefreq>
     {% for img in url.images %}
     <image:image>
       <image:loc>{{ img.loc }}</image:loc>

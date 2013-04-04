@@ -4,28 +4,39 @@ from django.contrib.sites.models import Site
 from django.core import urlresolvers
 from django.utils.encoding import smart_str
 from django.core.paginator import EmptyPage, PageNotAnInteger
+from django.views.decorators.cache import cache_page
 
 # Unfortunately, we can't just provide custom templates for these views -
 # yet this is only implemented in dev branch of Django. So we have to have
 # almost copies of the original views.
 
+@cache_page
 def index(request, sitemaps):
     current_site = Site.objects.get_current()
     sites = []
     protocol = request.is_secure() and 'https' or 'http'
-    for section, site in sitemaps.items():
+    for section, site in sorted(sitemaps.items()):
+        if len(site.items()) == 0:
+            continue
         if callable(site):
             pages = site().paginator.num_pages
         else:
             pages = site.paginator.num_pages
         sitemap_url = urlresolvers.reverse('imagesitemaps.views.sitemap', kwargs={'section': section})
-        sites.append('%s://%s%s' % (protocol, current_site.domain, sitemap_url))
+        sites.append(
+            dict(index_changefreq = site.index_changefreq,
+                 index_lastmod = site.index_lastmod,
+                 location = '%s://%s%s' % (
+                    protocol, current_site.domain, sitemap_url)
+                )
+            )
         if pages > 1:
             for page in range(2, pages+1):
                 sites.append('%s://%s%s?p=%s' % (protocol, current_site.domain, sitemap_url, page))
     xml = loader.render_to_string('sitemap_index.xml', {'sitemaps': sites})
     return HttpResponse(xml, mimetype='application/xml')
 
+@cache_page
 def sitemap(request, sitemaps, section=None):
     maps, urls = [], []
     if section is not None:

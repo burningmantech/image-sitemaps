@@ -51,6 +51,7 @@ class ImageSitemap(Sitemap):
 
         for item in self.paginator.page(page).object_list:
             loc = "http://%s%s" % (site.domain, get('location', item))
+            lastmod = get('lastmod', item)
             image_tags = []
             for attr in dir(self):
                 if attr.startswith(ATTR_PREFIX):
@@ -58,6 +59,8 @@ class ImageSitemap(Sitemap):
 
             url_info = {
                 'location':   loc,
+                'lastmod':   lastmod,
+                'changefreq':   self.changefreq,
             }
 
             optional_tags = image_tags[:]
@@ -70,7 +73,8 @@ class ImageSitemap(Sitemap):
                     if not req_tag in image_tags:
                         raise ImageTagException('<image:%s> is a required tag.' % req_tag)
 
-                    url_info['images'][idx][req_tag] = get('%s%s' % (ATTR_PREFIX, req_tag), img, None)
+                    url_info['images'][idx][req_tag] = "http://%s%s" % (site.domain, get('%s%s' % (ATTR_PREFIX, req_tag), img, None))
+
                     if req_tag in optional_tags:
                         optional_tags.remove(req_tag)
 
